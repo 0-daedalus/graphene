@@ -1,0 +1,66 @@
+#---------------INITIALIZATION-------------------------------
+
+variable        dt equal 0.0001
+variable        tt equal 100*${dt}
+variable        tp equal 1000*${dt}
+variable        T equal 300
+variable        erate equal 1.0e-3   # 1/ps
+variable        maxstrain equal 0.35
+
+units           metal
+dimension       3 
+boundary        p p m
+atom_style      atomic
+
+##---------------ATOM DEFINITION------------------------------
+
+read_data	    data-4-1.txt
+
+#---------------FORCE FIELDS---------------------------------
+
+pair_style      airebo 2.5 1 1
+pair_coeff      * * CH.airebo C H
+
+velocity        all create $T 76876 mom yes rot no
+minimize        0.001 0.001 1000 1000
+reset_timestep  0
+
+timestep        ${dt}
+fix             npt all npt temp $T $T ${tt} x -1000 -1000  ${tp} y -1000 -1000  ${tp}
+thermo          1000
+thermo_style    custom step temp
+dump            1 all atom 100000 dump1.lammpstrj
+run             1000000
+undump          1
+unfix           npt
+#########################################
+
+compute    mystress all stress/atom NULL pair virial
+compute    reducestress all reduce sum c_mystress[1]
+variable   volume equal lx*ly*(3.4)
+variable   stress equal c_reducestress/v_volume/1.0e4
+
+fix        npt all npt temp $T $T ${tt}  y -1000 -1000  ${tp}
+fix		   deform all deform 1 x erate ${erate} units box remap x
+
+variable    lx0 equal lx
+variable    strain equal (lx-${lx0})/${lx0}
+
+variable    run2 equal ${maxstrain}/${erate}/${dt}
+
+thermo          1000
+thermo_style    custom step temp v_stress v_strain atoms lx ly vol cpu
+dump            1 all atom 100000 dump2.lammpstrj
+
+run         ${run2}
+
+
+#V/lx0 = 0.001 => V = 0.001lx0 => x = Vt => 0.4lx0 = 0.001lx0*t => t = 0.4/0.001 = 400ps => step = 400/0.0001
+
+
+
+
+
+
+
+

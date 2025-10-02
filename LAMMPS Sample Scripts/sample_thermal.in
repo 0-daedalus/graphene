@@ -1,0 +1,65 @@
+variable	    temp equal 300
+variable        delta equal 40
+variable        hottemp equal ${temp}+${delta}/2.0  # 320 K
+variable        coldtemp equal ${temp}-${delta}/2.0 # 280 K
+
+units		    metal
+boundary        p p m
+
+atom_style      atomic
+read_data	    data-4-1.txt
+pair_style      airebo 2.5 1 1
+
+pair_coeff      * * CH.airebo C H
+
+velocity	    all create 300 1256 mom yes rot yes
+
+fix             nvt all nvt temp ${temp} ${temp} 0.001
+thermo          100
+thermo_style    custom step temp press etotal ke pe cpu atoms lx ly lz
+
+timestep        0.00003
+minimize        0.0001 0.0001 10000 10000
+dump            1 all atom 1000000 dump.lammpstrj
+run             1000000
+
+################################ Teperature gradient
+unfix           nvt
+variable	    X1 equal xlo+5
+variable        X2 equal xlo+15
+variable	    X3 equal xhi-15
+variable	    X4 equal xhi-5
+
+region	        fl	block INF	${X1}	INF	INF	INF	INF     units box
+region	        hot	block	${X1}	${X2}	INF	INF	INF	INF     units box
+region	        cold	block	${X3}	${X4}	INF	INF	INF	INF     units box
+region	        fr	block	${X4}	INF	INF	INF	INF	INF     units box
+
+group		    fl region fl
+group       	fr region fr
+group       	hot region hot
+group	    	cold region cold
+
+group       	middle subtract all hot cold
+
+velocity    	fl set 0 0 0 units box
+fix         	setforce1 fl setforce 0 0 0
+
+velocity    	fr set 0 0 0 units box
+fix         	setforce2 fr setforce 0 0 0
+
+fix         	hot hot nvt temp ${hottemp} ${hottemp} 0.001
+fix         	cold cold nvt temp ${coldtemp} ${coldtemp} 0.001
+
+fix         	nve middle nve
+
+variable        nbin equal ceil(lx/5)
+compute         tempprofile all temp/profile 1 1 1 x ${nbin} out bin		
+fix             tempprofile all ave/time 1 5000000 5000000 c_tempprofile[*] file temprofile.txt mode vector
+
+fix     	    ave all ave/time 1 500000 500000 f_hot f_cold file termostat.txt
+
+thermo          1000
+thermo_style    custom step temp press etotal ke pe cpu atoms lx ly lz
+
+run             20000000
