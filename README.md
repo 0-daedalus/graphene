@@ -50,6 +50,10 @@ Two attached LAMMPS scripts are in the /LAMMPS Sample Scripts:
 To go from the integer encoding in the datasets to a LAMMPS data file, we use following encoding strategy:
 ![Graphene Structure](./misc/graphene_structure.png)
 
+To go from LAMMPS data file to the integer encoding in the datasets we use the following encoding strategy:
+We consider unit cells consisting of four atoms, as shown in figure with numbers 1,2,3,4. Then, this unit cell is repeated 52 times along x-axis. This is followed by repeating the row 42 times along y-axis. Whenever functional group is encountered we assign value of 2,3 or 4 as described above.
+
+To go back from the integer vector to a data file we firstly map the carbon atoms to unfunctionalized graphene sheet and then attach functional groups, whenever value not equal to one is encountered in the vector.
 
 
 
