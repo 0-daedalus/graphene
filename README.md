@@ -48,7 +48,7 @@ Two attached LAMMPS scripts are in the /LAMMPS Sample Scripts:
 
 
 To go from the integer encoding in the datasets to a LAMMPS data file, we use following encoding strategy:
-![Graphene Structure](./misc/graphenestructure.png)
+![Graphene Structure](./misc/graphene_structure.png)
 
 
 
